@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+
+    <!--全局参数-->
+    <context-param>
+    <param-name>contextConfigLocation</param-name>
+        <param-value>
+			classpath:spring-mvc.xml
+			classpath:applicationContext.xml
+			classpath*:spring-shiro.xml
+		</param-value>
+    </context-param>
+
+    <!-- <context-param>
+     <param-name>contextConfigLocation</param-name>
+         <param-value>
+             classpath:spring-mvc.xml
+             classpath:spring-jdbc.xml
+             classpath*:spring-shiro.xml
+         </param-value>
+     </context-param>-->
+
+    <!--Spring刷新Log4j配置文件变动的间隔,单位为毫秒，也就是说spring每隔多少毫秒刷新一次Log4j配置文件-->
+    <!--动态修改log4j.properties，容器会每60秒扫描log4j的配置文件-->
+  <context-param>
+    <param-name>log4jRefreshInterval</param-name>
+    <param-value>600000</param-value>
+  </context-param>
+    <!--如果有多个web应用，怕webapp.root变量重复，可以在context-param里定义webAppRootKey-->
+    <!--String path=servletContext.getRealPath("/");  然后找到context-param的webAooRootKey对应的param-value，把param-value的值作为key，上面配置的是"myroot", 接着执行System.setProperty("myroot",path)。这样在web中就可以使用System.getProperty("myroot")来获取系统的绝对路径。-->
+  <context-param>
+    <param-name>webAppRootKey</param-name>
+    <param-value>webPath</param-value>
+  </context-param>
+  <listener>
+    <listener-class>org.springframework.web.util.WebAppRootListener</listener-class>
+  </listener>
+   <!-- 配置spring-->
+  <listener>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+  </listener>
+
+    <!--编码过滤器-->
+  <filter>
+    <filter-name>encodingFilter</filter-name>
+    <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+    <init-param>
+      <param-name>encoding</param-name>
+      <param-value>UTF-8</param-value>
+    </init-param>
+  </filter>
+  <filter-mapping>
+    <filter-name>encodingFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+
+    <!--shiro 过滤器  DelegatingFilterProxy通过代理模式将spring容器中的bean和filter关联起来-->
+    <filter>
+    <filter-name>shiroFilter</filter-name>
+    <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+        <!--设置true有servlet容器控制filter的生命周期-->
+        <init-param>
+      <param-name>targetFilterLifecycle</param-name>
+      <param-value>true</param-value>
+    </init-param>
+  </filter>
+  <filter-mapping>
+    <filter-name>shiroFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+    <!--配置XSS过滤器-->
+    <filter>
+    <filter-name>xssFilter</filter-name>
+    <filter-class>com.learn.xss.XssFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>xssFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+
+    <!--一个是SpringMVC配置文件的默认路径是WEB-INF下面，另一个是配置文件的name默认应该是你配置的DispatcherServlet的servlet-name+servlet.xml-->
+    <!--前端控制器-->
+  <servlet>
+    <servlet-name>dispatcherServlet</servlet-name>
+    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+      <init-param>
+  		<!-- 默认Springmvc的配置文件是在WEB-INF目录下，如果要放在其他目录，则需要指定 -->
+          <param-name>contextConfigLocation</param-name>
+  		<param-value>classpath:spring-mvc.xml</param-value>
+          <!-- 如果springmvc的配置文件放在WEB-INF目录下，但不想名字的形式为*-servlet.xml,
+          则可以通过namespace属性值进行指定 -->
+          <!-- <param-name>namespace</param-name>
+          <param-value>springmvc</param-value> -->
+  	</init-param>
+      <!--
+         程序运行时从web.xml开始，加载顺序为：context-param -> listener -> filter ->structs (如果使用structs的话)-> servlet
+         设置web.xml文件启动时加载的顺序(1代表容器启动时首先初始化该servlet，让这个Servlet随Servletp容器一起启动)
+         load-on-startup是指这个servlet是在当前web应用被加载的时候就被创建，而不是第一次被请求的时候被创建  -->
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>dispatcherServlet</servlet-name>
+    <url-pattern>/</url-pattern>
+  </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>default</servlet-name>
+        <url-pattern>*.css</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>default</servlet-name>
+        <url-pattern>*.js</url-pattern>
+    </servlet-mapping>
+
+    <!--配置velocityView视图-->
+ <!--   <servlet>
+        <servlet-name>velocityViewServlet</servlet-name>
+        <servlet-class>org.apache.velocity.tools.view.VelocityViewServlet</servlet-class>
+        <init-param>
+            <param-name>org.apache.velocity.toolbox</param-name>
+            <param-value>/WEB-INF/velocity-toolbox.xml</param-value>
+        </init-param>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>velocityViewServlet</servlet-name>
+        <url-pattern>*.vm</url-pattern>
+    </servlet-mapping>-->
+    <!--配置druid数据源集成了监控页面 输入工程后加druid/index.html-->
+<!--  <servlet>
+    <servlet-name>DruidStatView</servlet-name>
+    <servlet-class>com.alibaba.druid.support.http.StatViewServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>DruidStatView</servlet-name>
+    <url-pattern>/druid/*</url-pattern>
+  </servlet-mapping>-->
+    <!-- <error-page>
+       <error-code>404</error-code>
+       <location>/404.html</location>
+     </error-page>-->
+</web-app>

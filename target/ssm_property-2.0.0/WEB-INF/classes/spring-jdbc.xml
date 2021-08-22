@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans 
+        http://www.springframework.org/schema/beans/spring-beans-4.2.xsd        
+        http://www.springframework.org/schema/context 
+        http://www.springframework.org/schema/context/spring-context-4.2.xsd
+        http://www.springframework.org/schema/tx 
+     	http://www.springframework.org/schema/tx/spring-tx-4.2.xsd
+		http://www.springframework.org/schema/aop
+		http://www.springframework.org/schema/aop/spring-aop-2.5.xsd">
+
+	<tx:annotation-driven />
+	<!-- 数据库连接池 -->
+	<!-- 加载配置文件 -->
+	<context:property-placeholder location="classpath:db.properties" />
+	<!-- 数据库连接池 -->
+    <!--Spring整合阿里巴巴开源数据源Druid-->
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+		init-method="init" destroy-method="close">
+        <!--数据源驱动类可不写，Druid默认会自动根据URL识别DriverClass-->
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<!-- 初始化连接大小 -->
+		<property name="initialSize" value="${jdbc.initialSize}" />
+		<!-- 连接池最大数量 -->
+		<property name="maxActive" value="${jdbc.maxActive}" />
+
+        <!--监控数据库-->
+        <!--　监控统计用的filter:stat  日志用的filter:log4j    防御sql注入的filter:wall-->
+        <!--配置监控统计拦截的filters-->
+		<!--<property name="proxyFilters">
+			<list>
+				<ref bean="stat-filter" />
+				<ref bean="wall-filter" />
+			</list>
+		</property>-->
+	</bean>
+	<!--用于统计监控信息  tatFilter的别名是stat，这个别名映射配置信息保存在druid-xxx.jar!/META-INF/druid-filter.properties。-->
+	<!--<bean id="stat-filter" class="com.alibaba.druid.filter.stat.StatFilter">
+        &lt;!&ndash;slowSqlMillis用来配置SQL慢的标准，执行时间超过slowSqlMillis的就是慢。slowSqlMillis的缺省值为3000，也就是3秒。&ndash;&gt;
+		<property name="slowSqlMillis" value="1000" />
+		<property name="logSlowSql" value="true" />
+        &lt;!&ndash;SQL合并配置:当你程序中存在没有参数化的sql执行时，sql统计的效果会不好。在统计中，显示为3条sql，这不是我们希望要的效果。StatFilter提供合并的功能，能够将这3个SQL合并为如下的SQL&ndash;&gt;
+		<property name="mergeSql" value="true" />
+	</bean>
+-->
+    <!--做了自己的JDBC Proxy Driver，是的DruidDataSource无法正确识别数据库的类型，则需要特别指定-->
+<!--	<bean id="wall-filter" class="com.alibaba.druid.wall.WallFilter">
+		<property name="dbType" value="mysql" />
+		<property name="config" ref="wall-filter-config" />
+	</bean>
+
+	<bean id="wall-filter-config" class="com.alibaba.druid.wall.WallConfig">
+        &lt;!&ndash;是否允许一次执行多条语句，缺省关闭&ndash;&gt;
+		<property name="multiStatementAllow" value="true" />
+	</bean>-->
+
+    <!--配置druid监控spring jdbc-->
+    <!-- Spring和Jdbc的关联监控 ， 方法名正则匹配拦截配置-->
+    <!--Druid提供了Spring和Jdbc的关联监控-->
+	<bean id="druid-stat-interceptor" class="com.alibaba.druid.support.spring.stat.DruidStatInterceptor"></bean>
+
+    <!--方法名正则匹配拦截配置-->
+	<bean id="druid-stat-pointcut" class="org.springframework.aop.support.JdkRegexpMethodPointcut" scope="prototype">
+		<property name="patterns">
+			<list>
+				<value>com.learn.controller.*</value>
+				<value>com.learn.service.*</value>
+			</list>
+		</property>
+	</bean>
+	<!-- 切面 -->
+	<aop:config>
+		<aop:advisor advice-ref="druid-stat-interceptor" pointcut-ref="druid-stat-pointcut"/>
+	</aop:config>
+
+
+    <!-- 事务管理器transactionManager -->
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<!-- 数据源 -->
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+    <!-- spring和MyBatis完美整合，不需要myBatis -->
+    <!-- 让spring管理sqlsessionfactory使用mybatis和spring整合包中的 -->
+    <!--  自动扫描mybatis.xml文件 -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+	    <!-- 加载mybatis的全局配置文件 -->
+		<property name="configLocation" value="classpath:mybatis.xml" />
+		<!-- 数据库连接池 -->
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+    <!-- DAO接口所在包名，Spring会自动查找其包名 -->
+    <!-- 自动扫描将Mapper接口生成代理注入到Spring -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.learn.dao" />
+	</bean>
+</beans>

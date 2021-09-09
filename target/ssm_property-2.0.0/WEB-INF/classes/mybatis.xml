@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>  
-<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN"  
-"http://mybatis.org/dtd/mybatis-3-config.dtd">
-<configuration>
-    <!--由于大多数数据库设置不区分大小写 ，因此下画线方式的命名很常见，如user_name、user_email 。在 Java 中，开启驼峰式命名方式-->
-	<settings>  
-		<setting name="mapUnderscoreToCamelCase" value="true" />  
-    </settings>
-</configuration>
